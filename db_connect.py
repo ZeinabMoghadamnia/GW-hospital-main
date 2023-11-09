@@ -1,5 +1,6 @@
 import psycopg2
 from configparser import ConfigParser
+import logcode_hospitalprog as l
 
 
 def config(filename=None, section=None):
@@ -21,6 +22,7 @@ def config(filename=None, section=None):
 def connect(conn, cur):
     if conn and cur:
         conn, cur, local_connection = conn, cur, False
+        l.logger.info('connected to data base')
     else:
         try:
             params = config('database.ini', 'xxxx')
@@ -32,7 +34,7 @@ def connect(conn, cur):
         except (Exception, psycopg2.DatabaseError) as e:
             print(e, e.__traceback__.tb_lineno)
             print(__file__)
-
+            l.logger.error('error in connecting')
             conn, cur, local_connection = None, None, None
 
     return conn, cur, local_connection

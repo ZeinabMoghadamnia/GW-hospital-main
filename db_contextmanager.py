@@ -1,6 +1,9 @@
 from models import *
 from exceptions import *
 from db_connect import connect
+import logcode_hospitalprog as l
+from jdatetime import datetime
+from datetime import timedelta
 
 
 class DataBaseContextManager:
@@ -21,12 +24,14 @@ class DataBaseContextManager:
         if all([name_hospital, address]):
             self.dbcontextmanager = ListHospital.register_new_list_hospital(name_hospital, address)
         else:
+            l.logger.error('hospital failed to creat')
             raise HospitalCreateFail('HospitalCreateFail')
 
         if self.dbcontextmanager:
             self.conn, self.cur, self.local_connection = connect(conn, cur)
             query = """INSERT INTO list_hospital(name_hospital, address) values(%s,%s)"""
             self.dbcontextmanager.inser_to_database_list_hospital(self.cur, query)
+            l.logger.info("hospital obj created")
 
     # ============================================= Insert Patient =======================================
     def insert_patient(self, name_patient, lastname_patient, code_meli, password_patient, hospital_id, conn=None,
@@ -35,12 +40,14 @@ class DataBaseContextManager:
             self.dbcontextmanager = Patient.register_new_patient(name_patient, lastname_patient, code_meli,
                                                                  password_patient, hospital_id)
         else:
+            l.logger.error('patient failed to creat')
             raise HospitalCreateFail('HospitalCreateFail')
 
         if self.dbcontextmanager:
             self.conn, self.cur, self.local_connection = connect(conn, cur)
             query = """INSERT INTO patient(name_patient, lastname_patient, code_meli, password_patient, hospital_id) values(%s,%s,%s,%s,%s)"""
             self.dbcontextmanager.inser_to_database_patient(self.cur, query)
+            l.logger.info('new patient created')
 
     # ============================================== Insert doctor ==================================================
 
@@ -49,12 +56,14 @@ class DataBaseContextManager:
             self.dbcontextmanager = Doctor.register_new_doctor(name_doctor, lastname_doctor, medical_code, specialty,
                                                                hospital_id)
         else:
+            l.logger.error('doctor failed to creat')
             raise HospitalCreateFail('HospitalCreateFail')
 
         if self.dbcontextmanager:
             self.conn, self.cur, self.local_connection = connect(conn, cur)
             query = """INSERT INTO doctor(name_doctor, lastname_doctor, medical_code, specialty, hospital_id) values(%s,%s,%s,%s,%s)"""
             self.dbcontextmanager.insert_to_database_doctor(self.cur, query)
+            l.logger.info("docter created")
 
     # =============================================== Insert user admin ====================================================
 
@@ -63,12 +72,14 @@ class DataBaseContextManager:
             self.dbcontextmanager = UserAdmin.register_new_user_admin(name_admin, lastname_admin, username,
                                                                       password_admin, hospital_id)
         else:
+            l.logger.error('admin failed to creat')
             raise HospitalCreateFail('HospitalCreateFail')
 
         if self.dbcontextmanager:
             self.conn, self.cur, self.local_connection = connect(conn, cur)
             query = """INSERT INTO user_admin(name_admin, lastname_admin, username, password_admin, hospital_id) values(%s,%s,%s,%s,%s)"""
             self.dbcontextmanager.inser_to_database_user_admin(self.cur, query)
+            l.logger.info('admin created')
 
     # ========================================== Insert visit =================================================================
 
@@ -78,12 +89,14 @@ class DataBaseContextManager:
             self.dbcontextmanager = Visit.register_new_visit(date_visit, time_visit, amount_visit, description,
                                                              doctor_id, patient_id)
         else:
+            l.logger.error('visit failed to create')
             raise VisitCreateFail('VisitCreateFail')
 
         if self.dbcontextmanager:
             self.conn, self.cur, self.local_connection = connect(conn, cur)
             query = """INSERT INTO visit(date_visit, time_visit, amount_visit, description, doctor_id, patient_id) values(%s,%s,%s,%s,%s,%s)"""
             self.dbcontextmanager.inser_to_database_visit(self.cur, query)
+            l.logger.info('visit created')
 
     # ============================================= Login patient =================================================
 
@@ -91,6 +104,7 @@ class DataBaseContextManager:
         self.conn, self.cur, self.local_connection = connect(conn, cur)
         pg_select = """ SELECT code_meli, password_patient FROM "patient" """
         result = Patient.login(self.cur, pg_select, code_meli, password)
+        l.logger.info('patient logged in ')
         return result
 
     # ============================================= Login doctor =================================================
@@ -99,6 +113,7 @@ class DataBaseContextManager:
         self.conn, self.cur, self.local_connection = connect(conn, cur)
         pg_select = """ SELECT name_doctor, medical_code FROM "doctor" """
         result = Doctor.login(self.cur, pg_select, name_doctor, medical_code)
+        l.logger.info('doctor logged in ')
         return result
 
     # ============================================ Login user_admin ==============================================
@@ -107,6 +122,7 @@ class DataBaseContextManager:
         self.conn, self.cur, self.local_connection = connect(conn, cur)
         pg_select = """ SELECT username, password_admin FROM "user_admin" """
         result = UserAdmin.login(self.cur, pg_select, username, password_admin)
+        l.logger.info('admin logged in ')
         return result
 
     # =========================================== List All Patient =============================================
@@ -121,6 +137,7 @@ class DataBaseContextManager:
         self.conn, self.cur, self.local_connection = connect(conn, cur)
         pg_select = """ SELECT name_patient, lastname_patient, code_meli FROM "patient" """
         result = Patient.select_all_list_patient(self.cur, pg_select)
+        l.logger.info('listed patients')
         return result
 
     def patient_id(self, code_meli_enter, conn=None, cur=None):
@@ -135,6 +152,7 @@ class DataBaseContextManager:
         self.conn, self.cur, self.local_connection = connect(conn, cur)
         pg_select = """ SELECT doctor_id,name_doctor, lastname_doctor, specialty FROM "doctor" """
         result = Doctor.select_all_list_doctor(self.cur, pg_select)
+        l.logger.info('listed doctors')
         return result
 
     def doctor_id(self, medical_code_get, conn=None, cur=None):
@@ -149,6 +167,7 @@ class DataBaseContextManager:
         self.conn, self.cur, self.local_connection = connect(conn, cur)
         pg_select = """ SELECT COUNT(patient_id) FROM "visit" GROUP BY patient_id """
         result = Visit.select_count_visit_patient(self.cur, pg_select)
+        l.logger.info(result)
         return result
 
     def count_visit_patient_new(self, code_meli, conn=None, cur=None):
@@ -157,6 +176,7 @@ class DataBaseContextManager:
                JOIN "visit" ON patient.patient_id = visit.patient_id
                where code_meli = %s """
         result = Visit.select_count_visit_patient_new(self.cur, pg_select, code_meli)
+        l.logger.info("list been shown")
         return result
 
     def list_patient_for_doctor(self, doc_id, conn=None, cur=None):
@@ -165,6 +185,7 @@ class DataBaseContextManager:
                JOIN "visit" ON patient.patient_id = visit.patient_id
                where doctor_id = %s """
         result = Doctor.list_patient_for_doc(self.cur, pg_select, doc_id)
+        l.logger.info('list been shown')
         return result
 
     def hospital_total_income_today(self, conn=None, cur=None):
@@ -176,6 +197,7 @@ class DataBaseContextManager:
         pg_select = """ SELECT amount_visit::integer FROM "visit"
                where date_visit = %s """
         result = ListHospital.hospital_total_amount_today(self.cur, pg_select, current_datetime)
+        l.logger.info(result)
         return result
 
     def hospital_total_income_week(self, conn=None, cur=None):
@@ -183,6 +205,7 @@ class DataBaseContextManager:
         pg_select = """ SELECT amount_visit::integer FROM "visit"
             where date_visit BETWEEN %s And %s """
         result = ListHospital.hospital_total_amount_week(self.cur, pg_select)
+        l.logger.info(result)
         return result
 
     def hospital_total_income_month(self, conn=None, cur=None):
@@ -190,6 +213,7 @@ class DataBaseContextManager:
         pg_select = """ SELECT amount_visit::integer FROM "visit"
             where date_visit BETWEEN %s And %s """
         result = ListHospital.hospital_total_amount_month(self.cur, pg_select)
+        l.logger.info(result)
         return result
 
     def statistics_visit_of_each_doctor(self, medical_code, conn=None, cur=None):
@@ -197,24 +221,28 @@ class DataBaseContextManager:
         pg_select = """ SELECT doctor_id FROM "doctor"
             where medical_code = %s """
         result = Doctor.visit_statistics(self.cur, pg_select, medical_code)
+        l.logger.info(result)
         return result
 
     def total_visit_amount(self, conn=None, cur=None):
         self.conn, self.cur, self.local_connection = connect(conn, cur)
         pg_select = """ SELECT amount_visit::integer FROM "visit" """
         result = UserAdmin.total_amount(self.cur, pg_select)
+        l.logger.info(result)
         return result
 
     def count_visit_patient(self, patient_id, conn=None, cur=None):
         self.conn, self.cur, self.local_connection = connect(conn, cur)
         pg_select = """ SELECT COUNT(patient_id) FROM "visit"  where patient_id = %s """
         result = Visit.select_count_visit_patient(self.cur, pg_select, patient_id)
+        l.logger.info(result)
         return result
 
     def select_doctor(self, conn=None, cur=None):
         self.conn, self.cur, self.local_connection = connect(conn, cur)
         pg_select = """ SELECT doctor_id, name_doctor FROM "doctor" """
         result = Doctor.select_doctor_as_patient(self.cur, pg_select)
+        l.logger.info("doctor selected")
         return result
 
     def __exit__(self, exc_type, exc_val, exc_tb):
